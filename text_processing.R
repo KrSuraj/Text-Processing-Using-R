@@ -24,8 +24,8 @@ text_mat<-create_matrix(input, language = "english",removeNumbers = TRUE,
 dim(text_mat)
 set.seed(33)
 
-train_data<- create_container(text_mat, as.numeric(class), trainSize = 1:250,
-                              testSize = 251:300, virgin = F)
+train_data<- create_container(text_mat, as.numeric(class), trainSize = 1:200,
+                              testSize = 201:300, virgin = F)
 #training with SVM
 model<-train_model(train_data, "SVM")
 result<- classify_model(train_data, model)
@@ -34,30 +34,40 @@ cross_val <- cross_validate(train_data, 10, "SVM" )
 cross_val
 performance = create_analytics(train_data, result)
 summary(performance)
-
+z <- result[1]
 #one vs all classification
-class <- data$Primary.Cause[251:300]
-x<-NULL
-y<-NULL
-y[as.integer(class)!= 20] = 0
-y[as.integer(class)== 20] = 1
-z<-result[1]
-x[z==20] <- 1
-x[z!=20] <- 0
-
-#Confusion Matrix
-cf_mat <- confusionMatrix(y, x)
-
-#ROC Curve
-pred<- prediction(x,y)
-perf<-performance(pred, "fpr", "tpr")
-plot(perf, lty = 1, lwd = 2, col = 'blue')
-
-#Calculating AUC
-auc <- performance(pred,"auc")
-auc <- unlist(slot(auc, "y.values"))
-print("AUC is:")
-print(auc)
-setwd(cdr)
+class <- text$Primary.Cause[201:300]
 
 
+for (j in 1:length(levels(class)))
+  { 
+        print("class")
+        print(j)
+        if(sum(z==j)!=0 & sum(as.integer(class)==j)!=0){
+              x <-NULL
+              y <-NULL
+              y[as.integer(class) != j] <- 0
+              y[as.integer(class) == j] <- 1
+              x[z == j] <- 1
+              x[z != j] <- 0
+            
+          #Confusion Matrix
+              cf_mat <- confusionMatrix(y, x)
+              
+          #ROC Curve
+              pred<- prediction(x,y)
+              perf<-performance(pred, "tpr","fpr")
+              plot(perf, lty = 1, lwd = 2, col = 'blue')
+          
+          #Calculating AUC
+              auc <- performance(pred,"auc")
+              auc <- unlist(slot(auc, "y.values"))
+              print("AUC:")
+              print(auc)
+              print("Confusion Matrix")
+              print(cf_mat)
+              
+  }
+  else print("No variables with this class found, repeating for the next class")
+        setwd(cdr)
+}
